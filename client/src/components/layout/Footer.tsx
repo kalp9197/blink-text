@@ -7,9 +7,9 @@ const Footer: React.FC = () => {
   const isActive = (path: string) => location.pathname === path;
 
   return (
-    <footer className="border-t bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+    <footer className="bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <div className="container py-6">
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
           {/* Brand Section */}
           <div className="space-y-4">
             <h3 className="text-lg font-bold">BlinkText</h3>
@@ -61,49 +61,6 @@ const Footer: React.FC = () => {
             </ul>
           </div>
 
-          {/* Legal */}
-          <div>
-            <h4 className="font-medium mb-4">Legal</h4>
-            <ul className="space-y-2">
-              <li>
-                <Link
-                  to="/privacy"
-                  className={`text-sm transition-colors ${
-                    isActive("/privacy")
-                      ? "text-blue-600 dark:text-blue-400"
-                      : "text-muted-foreground hover:text-blue-600 dark:hover:text-blue-400"
-                  }`}
-                >
-                  Privacy Policy
-                </Link>
-              </li>
-              <li>
-                <Link
-                  to="/terms"
-                  className={`text-sm transition-colors ${
-                    isActive("/terms")
-                      ? "text-blue-600 dark:text-blue-400"
-                      : "text-muted-foreground hover:text-blue-600 dark:hover:text-blue-400"
-                  }`}
-                >
-                  Terms of Service
-                </Link>
-              </li>
-              <li>
-                <Link
-                  to="/cookies"
-                  className={`text-sm transition-colors ${
-                    isActive("/cookies")
-                      ? "text-blue-600 dark:text-blue-400"
-                      : "text-muted-foreground hover:text-blue-600 dark:hover:text-blue-400"
-                  }`}
-                >
-                  Cookie Policy
-                </Link>
-              </li>
-            </ul>
-          </div>
-
           {/* Social Links */}
           <div>
             <h4 className="font-medium mb-4">Connect</h4>
@@ -125,7 +82,7 @@ const Footer: React.FC = () => {
                 <FiTwitter className="h-5 w-5" />
               </a>
               <a
-                href="https://linkedin.com/in/kalp9197"
+                href="https://www.linkedin.com/in/patel-kalp-93526425b/"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="text-muted-foreground hover:text-blue-600 dark:hover:text-blue-400 transition-colors"

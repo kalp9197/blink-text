@@ -1,12 +1,16 @@
+# 🌐 LIVE SITE: [BLINKTEXT](https://blink-text.netlify.app/) 🌐
+
+> 🔒 End-to-End Encrypted Secure Text Sharing with Markdown Support
+
 # Blink Text - Secure Text Sharing
 
-A modern, secure, and user-friendly application for sharing sensitive text with end-to-end encryption.
+A modern, secure, and user-friendly application for sharing sensitive text with end-to-end encryption and markdown support.
 
 ## Features
 
 ### Security
 
-- 🔒 **End-to-End Encryption**: All text is encrypted before transmission and only decrypted when viewed
+- 🔒 **End-to-End Encryption**: All text is encrypted using AES-256 before transmission and only decrypted when viewed
 - 🔑 **Password Protection**: Optional password protection for sensitive content
 - ⏰ **Auto-Expiration**: Set custom expiration times (5min, 1hour, 1day, 1week, or custom)
 - 👁️ **View Limits**: Control how many times your text can be viewed
@@ -18,7 +22,12 @@ A modern, secure, and user-friendly application for sharing sensitive text with 
 - 🎨 **Modern UI**: Clean and intuitive interface
 - 📱 **Responsive Design**: Works perfectly on all devices
 - ⚡ **Fast Performance**: Optimized for speed and reliability
-- 📝 **Markdown Support**: Format your text with Markdown
+- 📝 **Markdown Support**: Format your text with full markdown support including:
+  - Headers, lists, and tables
+  - Code blocks with syntax highlighting
+  - Links and images
+  - Bold, italic, and strikethrough text
+  - Blockquotes and horizontal rules
 - 🌐 **Language Detection**: Automatic code language detection
 - 📋 **Copy to Clipboard**: Easy sharing with one click
 
@@ -75,7 +84,7 @@ npm start
 
 # Or start them separately:
 npm run client  # Starts client on http://localhost:3000
-npm run server  # Starts server on http://localhost:5000
+npm run server  # Starts server on http://localhost:5001
 ```
 
 ## Usage
