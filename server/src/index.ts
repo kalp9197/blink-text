@@ -9,6 +9,7 @@ import cron from "node-cron";
 import compression from "compression";
 import authRoutes from "./routes/auth";
 import textRoutes from "./routes/text";
+import healthRoutes from "./routes/health";
 import { errorHandler } from "./middleware/error";
 import Text from "./models/Text";
 
@@ -20,7 +21,12 @@ const app = express();
 
 // CORS configuration
 const corsOptions = {
-  origin: ["http://localhost:3000", "http://127.0.0.1:3000"],
+  origin: [
+    "http://localhost:3000",
+    "http://127.0.0.1:3000",
+    "https://blinktext.netlify.app", // Add your Netlify domain
+    process.env.FRONTEND_URL || "", // Add environment variable for frontend URL
+  ].filter(Boolean), // Remove empty strings
   methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
   allowedHeaders: ["Content-Type", "Authorization", "X-Password"],
   credentials: true,
@@ -29,24 +35,21 @@ const corsOptions = {
 };
 
 // Middleware
-app.use(cors(corsOptions)); // Enable CORS with options - must be before other middleware
+app.use(cors(corsOptions));
 app.use(
   helmet({
-    crossOriginResourcePolicy: false, // Allow cross-origin resource sharing
+    crossOriginResourcePolicy: false,
   })
-); // Security headers
-app.use(compression()); // Add compression for all responses
-app.use(express.json()); // Parse JSON bodies
-app.use(morgan("dev")); // Logging
+);
+app.use(compression());
+app.use(express.json());
+app.use(morgan(process.env.NODE_ENV === "production" ? "combined" : "dev"));
 
 // Add cache control middleware for GET requests
 app.use((req, res, next) => {
-  // Add cache headers for GET requests
   if (req.method === "GET") {
-    // Cache for 5 minutes (300 seconds) - adjust as needed
     res.setHeader("Cache-Control", "public, max-age=300");
   } else {
-    // For non-GET requests, set no-cache
     res.setHeader(
       "Cache-Control",
       "no-store, no-cache, must-revalidate, proxy-revalidate"
@@ -57,19 +60,17 @@ app.use((req, res, next) => {
 
 // Rate limiting
 const limiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 100, // limit each IP to 100 requests per windowMs
+  windowMs: 15 * 60 * 1000,
+  max: 100,
 });
 app.use(limiter);
 
-// Test route to verify CORS
-app.get("/api/test", (req, res) => {
-  res.json({ message: "API is working!" });
-});
+// Health check route
+app.use("/api/health", healthRoutes);
 
 // Routes
 app.use("/api/auth", authRoutes);
-app.use("/api/texts", textRoutes); // Update to match the API endpoint in the client
+app.use("/api/texts", textRoutes);
 
 // Error handling
 app.use(errorHandler);
@@ -81,15 +82,12 @@ mongoose
   .connect(MONGODB_URI)
   .then(() => {
     console.log("Connected to MongoDB");
-
-    // Set up cron job to clean up expired texts
     setupCleanupCronJob();
   })
   .catch((err) => console.error("MongoDB connection error:", err));
 
 // Function to set up cron job for cleaning expired texts
 const setupCleanupCronJob = () => {
-  // Schedule a job to run every 6 hours to clean up expired texts (instead of every hour)
   cron.schedule("0 */6 * * *", async () => {
     try {
       console.log("Running scheduled cleanup of expired texts...");
