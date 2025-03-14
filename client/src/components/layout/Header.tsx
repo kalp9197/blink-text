@@ -1,224 +1,130 @@
-import React, { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
-import {
-  FiLogOut,
-  FiMoon,
-  FiSun,
-  FiUser,
-  FiMenu,
-  FiX,
-  FiHelpCircle,
-  FiInfo,
-  FiSend,
-} from "react-icons/fi";
+import React from "react";
+import { Link, useLocation } from "react-router-dom";
+import { FiMoon, FiSun } from "react-icons/fi";
 import { useAuth } from "../../utils/authContext";
 import { useTheme } from "../../utils/themeContext";
 
 const Header: React.FC = () => {
-  const { user, isAuthenticated, logout } = useAuth();
+  const { user, logout } = useAuth();
   const { theme, toggleTheme } = useTheme();
-  const navigate = useNavigate();
-  const [menuOpen, setMenuOpen] = useState(false);
+  const location = useLocation();
 
-  const handleLogout = () => {
-    logout();
-    navigate("/");
+  const handleLogout = async () => {
+    try {
+      await logout();
+    } catch (error) {
+      console.error("Logout failed:", error);
+    }
   };
 
-  const toggleMenu = () => {
-    setMenuOpen(!menuOpen);
-  };
+  const isActive = (path: string) => location.pathname === path;
 
   return (
-    <header className="bg-card border-b border-border sticky top-0 z-50">
-      <div className="container mx-auto px-4 py-3 flex justify-between items-center">
-        <Link to="/" className="text-xl font-bold text-primary">
-          BlinkText
-        </Link>
-
-        {/* Mobile menu button */}
-        <button
-          className="md:hidden p-2 rounded-md hover:bg-muted transition-colors"
-          onClick={toggleMenu}
-          aria-label="Toggle menu"
-        >
-          {menuOpen ? <FiX size={20} /> : <FiMenu size={20} />}
-        </button>
-
-        {/* Desktop navigation */}
-        <div className="hidden md:flex items-center gap-4">
-          <Link
-            to="/"
-            className="px-4 py-2 font-medium text-primary hover:underline flex items-center"
-          >
-            <FiSend className="mr-2" />
-            Send Text
-          </Link>
-
-          <Link
-            to="/help"
-            className="px-4 py-2 font-medium text-muted-foreground hover:text-foreground flex items-center"
-          >
-            <FiHelpCircle className="mr-2" />
-            Help
-          </Link>
-
-          <Link
-            to="/about"
-            className="px-4 py-2 font-medium text-muted-foreground hover:text-foreground flex items-center"
-          >
-            <FiInfo className="mr-2" />
-            About
-          </Link>
-
-          <button
-            onClick={toggleTheme}
-            className="p-2 rounded-full hover:bg-muted transition-colors"
-            aria-label="Toggle theme"
-          >
-            {theme === "dark" ? <FiSun size={18} /> : <FiMoon size={18} />}
-          </button>
-
-          {isAuthenticated ? (
-            <>
-              <Link
-                to="/dashboard"
-                className="px-4 py-2 font-medium text-primary hover:underline items-center flex"
-              >
-                <FiUser className="mr-2" />
-                Dashboard
-              </Link>
-              <div className="px-4 py-2 bg-primary text-primary-foreground rounded">
-                {user?.name}
-              </div>
-              <button
-                onClick={handleLogout}
-                className="p-2 text-destructive hover:bg-destructive/10 rounded-md transition-colors"
-                title="Logout"
-              >
-                <FiLogOut size={18} />
-              </button>
-            </>
-          ) : (
-            <>
-              <Link
-                to="/login"
-                className="px-4 py-2 font-medium text-primary hover:underline"
-              >
-                Log in
-              </Link>
-              <Link
-                to="/register"
-                className="px-4 py-2 bg-primary text-primary-foreground rounded hover:bg-primary/90"
-              >
-                Sign up
-              </Link>
-            </>
-          )}
-        </div>
-      </div>
-
-      {/* Mobile navigation menu */}
-      {menuOpen && (
-        <div className="md:hidden border-t border-border">
-          <div className="container mx-auto px-4 py-3 flex flex-col space-y-3">
-            <Link
-              to="/"
-              className="px-4 py-2 font-medium text-primary hover:underline flex items-center"
-              onClick={() => setMenuOpen(false)}
-            >
-              <FiSend className="mr-2" />
-              Send Text
+    <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+      <div className="container flex h-14 items-center">
+        <nav className="flex items-center justify-between w-full">
+          <div className="flex items-center gap-6">
+            <Link to="/" className="text-xl font-bold">
+              BlinkText
             </Link>
-
-            <Link
-              to="/help"
-              className="px-4 py-2 font-medium text-muted-foreground hover:text-foreground flex items-center"
-              onClick={() => setMenuOpen(false)}
-            >
-              <FiHelpCircle className="mr-2" />
-              Help
-            </Link>
-
-            <Link
-              to="/about"
-              className="px-4 py-2 font-medium text-muted-foreground hover:text-foreground flex items-center"
-              onClick={() => setMenuOpen(false)}
-            >
-              <FiInfo className="mr-2" />
-              About
-            </Link>
-
-            {isAuthenticated ? (
-              <>
+            <div className="hidden md:flex items-center gap-4">
+              {user && (
                 <Link
                   to="/dashboard"
-                  className="px-4 py-2 font-medium text-primary hover:underline flex items-center"
-                  onClick={() => setMenuOpen(false)}
+                  className={`text-sm font-medium transition-colors ${
+                    isActive("/dashboard")
+                      ? "text-blue-600 dark:text-blue-400"
+                      : "text-muted-foreground hover:text-blue-600 dark:hover:text-blue-400"
+                  }`}
                 >
-                  <FiUser className="mr-2" />
                   Dashboard
                 </Link>
-                <div className="flex justify-between items-center">
-                  <div className="px-4 py-2 bg-primary text-primary-foreground rounded">
-                    {user?.name}
-                  </div>
-                  <button
-                    onClick={() => {
-                      handleLogout();
-                      setMenuOpen(false);
-                    }}
-                    className="p-2 text-destructive hover:bg-destructive/10 rounded-md transition-colors"
-                    title="Logout"
-                  >
-                    <FiLogOut size={18} />
-                  </button>
-                </div>
+              )}
+              <Link
+                to="/about"
+                className={`text-sm font-medium transition-colors ${
+                  isActive("/about")
+                    ? "text-blue-600 dark:text-blue-400"
+                    : "text-muted-foreground hover:text-blue-600 dark:hover:text-blue-400"
+                }`}
+              >
+                About
+              </Link>
+              <Link
+                to="/help"
+                className={`text-sm font-medium transition-colors ${
+                  isActive("/help")
+                    ? "text-blue-600 dark:text-blue-400"
+                    : "text-muted-foreground hover:text-blue-600 dark:hover:text-blue-400"
+                }`}
+              >
+                Help
+              </Link>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-4">
+            {user ? (
+              <>
+                <span className="text-sm font-medium text-violet-600 dark:text-violet-400">
+                  {user.name}
+                </span>
+                <button
+                  onClick={handleLogout}
+                  className="px-3 py-1 text-sm text-muted-foreground hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
+                >
+                  Logout
+                </button>
+                <button
+                  onClick={toggleTheme}
+                  className="p-2 hover:bg-muted rounded-md transition-colors"
+                  title={`Switch to ${
+                    theme === "dark" ? "light" : "dark"
+                  } mode`}
+                >
+                  {theme === "dark" ? (
+                    <FiSun className="h-5 w-5" />
+                  ) : (
+                    <FiMoon className="h-5 w-5" />
+                  )}
+                </button>
               </>
             ) : (
-              <div className="flex flex-col space-y-2">
+              <div className="flex items-center gap-4">
                 <Link
                   to="/login"
-                  className="px-4 py-2 font-medium text-primary hover:underline"
-                  onClick={() => setMenuOpen(false)}
+                  className={`text-sm font-medium transition-colors ${
+                    isActive("/login")
+                      ? "text-blue-600 dark:text-blue-400"
+                      : "text-muted-foreground hover:text-blue-600 dark:hover:text-blue-400"
+                  }`}
                 >
-                  Log in
+                  Login
                 </Link>
                 <Link
                   to="/register"
-                  className="px-4 py-2 bg-primary text-primary-foreground rounded hover:bg-primary/90 text-center"
-                  onClick={() => setMenuOpen(false)}
+                  className="px-3 py-1 bg-primary text-primary-foreground rounded-md hover:bg-primary/90 transition-colors"
                 >
-                  Sign up
+                  Sign Up
                 </Link>
+                <button
+                  onClick={toggleTheme}
+                  className="p-2 hover:bg-muted rounded-md transition-colors"
+                  title={`Switch to ${
+                    theme === "dark" ? "light" : "dark"
+                  } mode`}
+                >
+                  {theme === "dark" ? (
+                    <FiSun className="h-5 w-5" />
+                  ) : (
+                    <FiMoon className="h-5 w-5" />
+                  )}
+                </button>
               </div>
             )}
-
-            <div className="flex justify-center">
-              <button
-                onClick={() => {
-                  toggleTheme();
-                  setMenuOpen(false);
-                }}
-                className="p-2 rounded-full hover:bg-muted transition-colors"
-                aria-label="Toggle theme"
-              >
-                {theme === "dark" ? (
-                  <div className="flex items-center">
-                    <FiSun size={18} className="mr-2" />
-                    Light mode
-                  </div>
-                ) : (
-                  <div className="flex items-center">
-                    <FiMoon size={18} className="mr-2" />
-                    Dark mode
-                  </div>
-                )}
-              </button>
-            </div>
           </div>
-        </div>
-      )}
+        </nav>
+      </div>
     </header>
   );
 };

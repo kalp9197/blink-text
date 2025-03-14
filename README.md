@@ -43,38 +43,39 @@ A modern, secure, and user-friendly application for sharing sensitive text with 
 1. Clone the repository:
 
 ```bash
-git clone https://github.com/yourusername/blink-text.git
+git clone https://github.com/kalp9197/blink-text.git
 cd blink-text
 ```
 
-2. Install dependencies:
+2. Install all dependencies (client and server):
 
 ```bash
-# Install client dependencies
-cd client
-npm install
-
-# Install server dependencies
-cd ../server
-npm install
+npm run install-all
 ```
+
+This will install:
+
+- Root project dependencies
+- Client dependencies
+- Server dependencies
 
 3. Set up environment variables:
 
 ```bash
 # In the server directory, create a .env file:
-cp .env.example .env
-# Edit .env with your configuration
+cp server/.env.example server/.env
+# Edit server/.env with your configuration
 ```
 
 4. Start the development servers:
 
 ```bash
-# Start the client (in the client directory)
+# Start both client and server
 npm start
 
-# Start the server (in the server directory)
-npm run dev
+# Or start them separately:
+npm run client  # Starts client on http://localhost:3000
+npm run server  # Starts server on http://localhost:5000
 ```
 
 ## Usage
@@ -112,6 +113,30 @@ npm run dev
 - CORS protection
 - XSS prevention
 
+## Development
+
+### Project Structure
+
+```
+blink-text/
+├── client/             # React frontend
+│   ├── src/           # Source files
+│   ├── public/        # Static files
+│   └── package.json   # Frontend dependencies
+├── server/            # Node.js backend
+│   ├── src/          # Source files
+│   └── package.json  # Backend dependencies
+└── package.json      # Root project configuration
+```
+
+### Available Scripts
+
+- `npm start`: Run both client and server in development mode
+- `npm run client`: Run only the client
+- `npm run server`: Run only the server
+- `npm run install-all`: Install all dependencies
+- `npm run build`: Build the client for production
+
 ## Contributing
 
 1. Fork the repository
@@ -131,3 +156,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 - Icons from Feather Icons
 - Syntax highlighting with Prism.js
 - Markdown support with React Markdown
+
+## Author
+
+- GitHub: [@kalp9197](https://github.com/kalp9197)

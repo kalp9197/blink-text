@@ -14,7 +14,6 @@ import {
 import toast from "react-hot-toast";
 import { textApi } from "../utils/api";
 import { useAuth } from "../utils/authContext";
-import { encryptText, generateEncryptionKey } from "../utils/encryption";
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
 
@@ -24,17 +23,15 @@ const Home: React.FC = () => {
 
   // Form state
   const [content, setContent] = useState("");
-  const [expirationOption, setExpirationOption] = useState("1hour");
-  const [expirationMinutes, setExpirationMinutes] = useState(60);
-  const [customExpiryDate, setCustomExpiryDate] = useState<Date | null>(null);
+  const [expiryTime, setExpiryTime] = useState("1hour");
+  const [maxViews, setMaxViews] = useState<number | null>(null);
   const [viewOnce, setViewOnce] = useState(false);
   const [isProtected, setIsProtected] = useState(false);
   const [password, setPassword] = useState("");
-  const [maxViews, setMaxViews] = useState<number | undefined>(undefined);
   const [useMarkdown, setUseMarkdown] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   // UI state
-  const [isLoading, setIsLoading] = useState(false);
   const [showAdvancedOptions, setShowAdvancedOptions] = useState(false);
   const [generatedLink, setGeneratedLink] = useState<string | null>(null);
 
@@ -45,88 +42,65 @@ const Home: React.FC = () => {
   const maxDate = new Date();
   maxDate.setDate(maxDate.getDate() + 30);
 
-  const handleExpirationOptionChange = (option: string) => {
-    setExpirationOption(option);
-
-    switch (option) {
-      case "5min":
-        setExpirationMinutes(5);
-        setCustomExpiryDate(null);
-        break;
-      case "1hour":
-        setExpirationMinutes(60);
-        setCustomExpiryDate(null);
-        break;
-      case "1day":
-        setExpirationMinutes(1440);
-        setCustomExpiryDate(null);
-        break;
-      case "1week":
-        setExpirationMinutes(10080);
-        setCustomExpiryDate(null);
-        break;
-      case "custom":
-        // Keep existing expiration minutes until custom date is selected
-        break;
-      default:
-        setExpirationMinutes(60);
-        setCustomExpiryDate(null);
-    }
-  };
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setIsSubmitting(true);
 
     if (!content) {
       toast.error("Please enter some text to share");
+      setIsSubmitting(false);
       return;
     }
 
     if (content.length > 100000) {
       toast.error("Text exceeds maximum length of 100,000 characters");
+      setIsSubmitting(false);
       return;
     }
 
     if (isProtected && !password) {
       toast.error("Please enter a password for your protected text");
+      setIsSubmitting(false);
       return;
     }
 
     if (isProtected && password.length < 6) {
       toast.error("Password must be at least 6 characters long");
+      setIsSubmitting(false);
       return;
     }
 
     try {
-      setIsLoading(true);
+      // Convert expiryTime to expirationMinutes
+      let expirationMinutes: number;
+      switch (expiryTime) {
+        case "5min":
+          expirationMinutes = 5;
+          break;
+        case "1hour":
+          expirationMinutes = 60;
+          break;
+        case "1day":
+          expirationMinutes = 1440;
+          break;
+        case "1week":
+          expirationMinutes = 10080;
+          break;
+        default:
+          expirationMinutes = 60; // Default to 1 hour
+      }
 
-      // Generate encryption key
-      const encryptionKey = generateEncryptionKey();
-
-      // Encrypt the content
-      const encryptedContent = encryptText(content, encryptionKey);
-
-      // Determine if content should be treated as markdown
-      const detectMarkdown = useMarkdown || /[*#`>-]/.test(content);
-
-      // Create text data object with encrypted content
       const textData = {
-        content: encryptedContent,
-        encryptionKey,
+        content,
         expirationMinutes,
+        maxViews: maxViews || undefined,
         viewOnce,
-        isProtected,
+        isProtected: isProtected || undefined,
         password: isProtected ? password : undefined,
-        maxViews: maxViews !== undefined ? maxViews : undefined,
-        customExpiryDate: customExpiryDate
-          ? customExpiryDate.toISOString()
-          : undefined,
-        isMarkdown: detectMarkdown,
+        isMarkdown: useMarkdown || undefined,
       };
 
-      // Create text without authentication
       const response = await textApi.create(textData);
-
       const accessToken = response.data.data.accessToken;
       const shareUrl =
         response.data.data.shareUrl ||
@@ -137,14 +111,10 @@ const Home: React.FC = () => {
 
       // Navigate to view page
       navigate(`/view/${accessToken}?new=true`);
-    } catch (error: any) {
-      console.error("Error creating text:", error);
-      toast.error(
-        error.response?.data?.message ||
-          "Failed to create text. Please try again."
-      );
+    } catch (err) {
+      console.error("Error creating text:", err);
     } finally {
-      setIsLoading(false);
+      setIsSubmitting(false);
     }
   };
 
@@ -163,13 +133,11 @@ const Home: React.FC = () => {
 
   const createNewText = () => {
     setContent("");
-    setExpirationOption("1hour");
-    setExpirationMinutes(60);
-    setCustomExpiryDate(null);
+    setExpiryTime("1hour");
+    setMaxViews(null);
     setViewOnce(false);
     setIsProtected(false);
     setPassword("");
-    setMaxViews(undefined);
     setUseMarkdown(false);
     setShowAdvancedOptions(false);
     setGeneratedLink(null);
@@ -256,9 +224,9 @@ const Home: React.FC = () => {
                       <div className="grid grid-cols-2 gap-2 mb-2">
                         <button
                           type="button"
-                          onClick={() => handleExpirationOptionChange("5min")}
+                          onClick={() => setExpiryTime("5min")}
                           className={`px-2 py-1 text-sm rounded-md border ${
-                            expirationOption === "5min"
+                            expiryTime === "5min"
                               ? "bg-primary text-primary-foreground border-primary"
                               : "bg-card border-input"
                           }`}
@@ -267,9 +235,9 @@ const Home: React.FC = () => {
                         </button>
                         <button
                           type="button"
-                          onClick={() => handleExpirationOptionChange("1hour")}
+                          onClick={() => setExpiryTime("1hour")}
                           className={`px-2 py-1 text-sm rounded-md border ${
-                            expirationOption === "1hour"
+                            expiryTime === "1hour"
                               ? "bg-primary text-primary-foreground border-primary"
                               : "bg-card border-input"
                           }`}
@@ -278,9 +246,9 @@ const Home: React.FC = () => {
                         </button>
                         <button
                           type="button"
-                          onClick={() => handleExpirationOptionChange("1day")}
+                          onClick={() => setExpiryTime("1day")}
                           className={`px-2 py-1 text-sm rounded-md border ${
-                            expirationOption === "1day"
+                            expiryTime === "1day"
                               ? "bg-primary text-primary-foreground border-primary"
                               : "bg-card border-input"
                           }`}
@@ -289,9 +257,9 @@ const Home: React.FC = () => {
                         </button>
                         <button
                           type="button"
-                          onClick={() => handleExpirationOptionChange("1week")}
+                          onClick={() => setExpiryTime("1week")}
                           className={`px-2 py-1 text-sm rounded-md border ${
-                            expirationOption === "1week"
+                            expiryTime === "1week"
                               ? "bg-primary text-primary-foreground border-primary"
                               : "bg-card border-input"
                           }`}
@@ -302,9 +270,9 @@ const Home: React.FC = () => {
 
                       <button
                         type="button"
-                        onClick={() => handleExpirationOptionChange("custom")}
+                        onClick={() => setExpiryTime("custom")}
                         className={`w-full px-2 py-1 text-sm rounded-md border ${
-                          expirationOption === "custom"
+                          expiryTime === "custom"
                             ? "bg-primary text-primary-foreground border-primary"
                             : "bg-card border-input"
                         }`}
@@ -312,11 +280,13 @@ const Home: React.FC = () => {
                         Custom date/time
                       </button>
 
-                      {expirationOption === "custom" && (
+                      {expiryTime === "custom" && (
                         <div className="mt-2">
                           <DatePicker
-                            selected={customExpiryDate}
-                            onChange={(date: Date) => setCustomExpiryDate(date)}
+                            selected={new Date()}
+                            onChange={(date: Date) => {
+                              // Handle date change
+                            }}
                             showTimeSelect
                             timeFormat="HH:mm"
                             timeIntervals={15}
@@ -408,23 +378,24 @@ const Home: React.FC = () => {
                               <FiEye className="mr-1" />
                               Maximum views
                             </label>
-                            <input
-                              type="number"
+                            <select
                               id="maxViews"
                               value={maxViews || ""}
-                              onChange={(e) => {
-                                const val = parseInt(e.target.value);
+                              onChange={(e) =>
                                 setMaxViews(
-                                  isNaN(val) || val <= 0 ? undefined : val
-                                );
-                              }}
-                              min="1"
+                                  e.target.value ? Number(e.target.value) : null
+                                )
+                              }
                               className="w-full px-3 py-2 bg-background text-foreground border border-input rounded-md"
-                              placeholder="Unlimited"
-                            />
-                            <p className="text-xs text-muted-foreground mt-1">
-                              Leave empty for unlimited views
-                            </p>
+                            >
+                              <option value="">No limit</option>
+                              <option value="1">1 view</option>
+                              <option value="5">5 views</option>
+                              <option value="10">10 views</option>
+                              <option value="25">25 views</option>
+                              <option value="50">50 views</option>
+                              <option value="100">100 views</option>
+                            </select>
                           </div>
                         )}
                       </div>
@@ -435,10 +406,10 @@ const Home: React.FC = () => {
                   <div className="flex justify-end">
                     <button
                       type="submit"
-                      disabled={isLoading}
+                      disabled={isSubmitting}
                       className="px-6 py-3 bg-primary text-primary-foreground rounded-md hover:bg-primary/90 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 flex items-center"
                     >
-                      {isLoading ? (
+                      {isSubmitting ? (
                         <>
                           <span className="mr-2">Creating...</span>
                           <div className="animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full"></div>

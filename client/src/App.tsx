@@ -4,13 +4,10 @@ import {
   Routes,
   Route,
   Navigate,
-  Outlet,
 } from "react-router-dom";
 import { Toaster } from "react-hot-toast";
 import { ThemeProvider } from "./utils/themeContext";
 import { AuthProvider, useAuth } from "./utils/authContext";
-import Header from "./components/layout/Header";
-import Footer from "./components/layout/Footer";
 import Layout from "./components/layout/Layout";
 import Home from "./pages/Home";
 import Login from "./pages/Login";

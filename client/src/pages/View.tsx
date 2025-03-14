@@ -29,14 +29,6 @@ import { decryptText } from "../utils/encryption";
 const QRCode = lazy(() => import("react-qr-code"));
 const SyntaxHighlighter = lazy(() => import("react-syntax-highlighter"));
 
-// Remove unused lazy loaded components and fix style loading approach
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-const CodeBlock = lazy(() => import("../components/CodeBlock"));
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-const PasswordProtectionForm = lazy(
-  () => import("../components/PasswordProtectionForm")
-);
-
 // Loading fallback component
 const LoadingFallback = () => (
   <div className="animate-pulse bg-muted/50 h-40 rounded-md flex items-center justify-center">
@@ -77,8 +69,8 @@ const View: React.FC = () => {
   const [syntaxHighlightTheme, setSyntaxHighlightTheme] = useState<any>(null);
 
   const currentUrl = window.location.href;
+  const viewCountProcessed = React.useRef<boolean>(false);
 
-  // Top languages for quick selection - memoized
   const topLanguages = useMemo(
     () => [
       { value: "plaintext", label: "Plain Text" },
@@ -91,7 +83,6 @@ const View: React.FC = () => {
     []
   );
 
-  // All supported languages - memoized
   const allLanguages = useMemo(
     () => [
       ...topLanguages,
@@ -112,15 +103,9 @@ const View: React.FC = () => {
     [topLanguages]
   );
 
-  // Add a ref to track if we've already processed a view count increment
-  const viewCountProcessed = React.useRef<boolean>(false);
-
-  // Optimized autoDetectLanguage with useCallback - moved above the useEffect that depends on it
   const autoDetectLanguage = useCallback((content: string) => {
-    // Early return for empty content
     if (!content || typeof content !== "string") return;
 
-    // JavaScript/TypeScript detection
     if (
       content.includes("function") ||
       content.includes("const ") ||
@@ -146,7 +131,6 @@ const View: React.FC = () => {
       return;
     }
 
-    // Python detection
     if (
       content.includes("def ") ||
       (content.includes("import ") && !content.includes(";"))
@@ -155,7 +139,6 @@ const View: React.FC = () => {
       return;
     }
 
-    // HTML detection
     if (
       content.includes("<!DOCTYPE html>") ||
       (content.includes("<html>") && content.includes("<body>"))
@@ -164,7 +147,6 @@ const View: React.FC = () => {
       return;
     }
 
-    // JSON detection
     if (
       content.trim().startsWith("{") &&
       content.trim().endsWith("}") &&
@@ -175,7 +157,6 @@ const View: React.FC = () => {
     }
   }, []);
 
-  // Load syntax highlighting theme based on current theme - moved from lazy loaded approach
   useEffect(() => {
     const loadTheme = async () => {
       try {

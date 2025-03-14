@@ -44,29 +44,20 @@ interface Text {
 const Dashboard: React.FC = () => {
   const { theme } = useTheme();
 
-  // Data state
   const [texts, setTexts] = useState<Text[]>([]);
   const [filteredTexts, setFilteredTexts] = useState<Text[]>([]);
-  // These values are used for pagination information but not directly rendered
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const [totalTextsCount, setTotalTextsCount] = useState(0);
   const [currentPage, setCurrentPage] = useState(1);
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const [totalPagesCount, setTotalPagesCount] = useState(1);
   const [hasMore, setHasMore] = useState(true);
 
-  // Cache state to reduce unnecessary API calls
   const [lastRefreshed, setLastRefreshed] = useState<Date | null>(null);
-  const CACHE_EXPIRY_MINUTES = 5; // Consider cache valid for 5 minutes
+  const CACHE_EXPIRY_MINUTES = 5;
 
-  // UI state
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [filter, setFilter] = useState<string>("all");
   const [showFilters, setShowFilters] = useState(false);
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
 
-  // Filter definitions - wrapped in useMemo to avoid dependency issues
   const filterOptions = useMemo(
     () => [
       { id: "all", label: "All", icon: <FiFilter /> },
@@ -82,7 +73,7 @@ const Dashboard: React.FC = () => {
       { id: "markdown", label: "Markdown", icon: <FiCode /> },
     ],
     []
-  ); // No dependencies since these are static
+  );
 
   // Fetch texts with pagination
   const fetchTexts = useCallback(
@@ -112,8 +103,6 @@ const Dashboard: React.FC = () => {
           setTexts((prev) => [...prev, ...newTexts]);
         }
 
-        setTotalTextsCount(response.data.total);
-        setTotalPagesCount(response.data.pages);
         setCurrentPage(page);
         setHasMore(page < response.data.pages);
         setLastRefreshed(new Date());

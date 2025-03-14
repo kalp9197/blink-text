@@ -47,7 +47,6 @@ const TextCard: React.FC<TextCardProps> = ({
 }) => {
   const { theme } = useTheme();
 
-  // Get status UI elements
   const getStatusDetails = (status?: string) => {
     switch (status) {
       case "active":
@@ -110,7 +109,6 @@ const TextCard: React.FC<TextCardProps> = ({
         ${theme === "dark" ? "bg-card/30" : "bg-card"} 
         hover:shadow-md transition duration-200`}
     >
-      {/* Card Header */}
       <div className="px-4 py-3 border-b border-border flex items-center justify-between">
         <div className="flex items-center space-x-2">
           <span
@@ -120,7 +118,6 @@ const TextCard: React.FC<TextCardProps> = ({
             {statusDetails.label}
           </span>
 
-          {/* Additional indicators */}
           {text.isProtected && (
             <span className="text-xs flex items-center text-muted-foreground">
               <FiLock className="mr-1" size={12} />
@@ -143,39 +140,36 @@ const TextCard: React.FC<TextCardProps> = ({
           )}
         </div>
 
-        <div className="flex space-x-1">
+        <div className="flex items-center space-x-2">
           <button
             onClick={() => onCopy(text.accessToken)}
-            className="text-muted-foreground hover:text-foreground rounded p-1 transition-colors"
+            className="p-1 hover:bg-muted rounded-md transition-colors"
             title="Copy link"
           >
             <FiCopy size={16} />
           </button>
 
+          <a
+            href={url}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="p-1 hover:bg-muted rounded-md transition-colors"
+            title="Open in new tab"
+          >
+            <FiExternalLink size={16} />
+          </a>
+
           <button
             onClick={() => onDelete(text._id)}
-            className={`
-              rounded p-1 transition-colors
-              ${
-                deleteConfirm === text._id
-                  ? "text-red-500 hover:text-red-600"
-                  : "text-muted-foreground hover:text-foreground"
-              }
-            `}
-            title={
-              deleteConfirm === text._id
-                ? "Click again to confirm"
-                : "Delete text"
-            }
+            className="p-1 hover:bg-muted rounded-md transition-colors text-destructive"
+            title="Delete text"
           >
             <FiTrash size={16} />
           </button>
         </div>
       </div>
 
-      {/* Card Body */}
       <div className="px-4 py-3">
-        {/* View Info & Progress Bar */}
         {text.maxViews && (
           <div className="mb-3">
             <div className="flex justify-between text-xs mb-1">
@@ -204,7 +198,6 @@ const TextCard: React.FC<TextCardProps> = ({
           </div>
         )}
 
-        {/* Time Info */}
         <div className="flex justify-between text-xs text-muted-foreground mb-3">
           <span title={new Date(text.createdAt).toLocaleString()}>
             Created: {formatDate(text.createdAt)}
@@ -221,21 +214,12 @@ const TextCard: React.FC<TextCardProps> = ({
           )}
         </div>
 
-        {/* Link to View */}
-        <div className="grid grid-cols-1 gap-2">
-          <Link
-            to={`/view/${text.accessToken}`}
-            className="w-full px-3 py-2 text-sm text-center rounded-md transition-colors bg-primary text-primary-foreground hover:bg-primary/90 flex items-center justify-center"
-            target="_blank"
-          >
-            <FiExternalLink className="mr-2" />
-            Open Text
-          </Link>
-
-          <div className="text-xs text-muted-foreground truncate">
-            <span className="font-semibold">Link:</span> {truncate(url, 40)}
-          </div>
-        </div>
+        <Link
+          to={`/view/${text.accessToken}`}
+          className="block w-full text-center py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90 transition-colors"
+        >
+          View Text
+        </Link>
       </div>
     </motion.div>
   );
