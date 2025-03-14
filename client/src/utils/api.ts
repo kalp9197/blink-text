@@ -3,7 +3,9 @@ import { toast } from "react-hot-toast";
 
 // Create an axios instance with base URL and default headers
 const api = axios.create({
-  baseURL: process.env.REACT_APP_API_URL || "http://localhost:5001/api",
+  baseURL:
+    process.env.REACT_APP_API_URL ||
+    "https://blink-text-production.up.railway.app/api",
   headers: {
     "Content-Type": "application/json",
   },
