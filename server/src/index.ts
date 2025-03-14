@@ -1,110 +1,73 @@
 import express from "express";
 import cors from "cors";
-import helmet from "helmet";
-import morgan from "morgan";
-import dotenv from "dotenv";
-import mongoose from "mongoose";
-import rateLimit from "express-rate-limit";
-import cron from "node-cron";
-import compression from "compression";
-import authRoutes from "./routes/auth";
-import textRoutes from "./routes/text";
-import healthRoutes from "./routes/health";
-import { errorHandler } from "./middleware/error";
-import Text from "./models/Text";
-
-// Load environment variables
-dotenv.config();
+import { config } from "./config/config";
+import { connectDB } from "./utils/database";
+import { setupMiddleware } from "./middleware/setup";
+import { setupRoutes } from "./routes/setup";
+import { setupCleanupCronJob } from "./services/cleanupService";
 
 // Create Express app
 const app = express();
 
-// CORS configuration
-const corsOptions = {
-  origin: [
-    "http://localhost:3000",
-    "http://127.0.0.1:3000",
-    "https://blinktext.netlify.app", // Add your Netlify domain
-    process.env.FRONTEND_URL || "", // Add environment variable for frontend URL
-  ].filter(Boolean), // Remove empty strings
-  methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-  allowedHeaders: ["Content-Type", "Authorization", "X-Password"],
-  credentials: true,
-  preflightContinue: false,
-  optionsSuccessStatus: 204,
-};
-
-// Middleware
-app.use(cors(corsOptions));
+// Set up CORS manually to ensure it works correctly
 app.use(
-  helmet({
-    crossOriginResourcePolicy: false,
+  cors({
+    origin: [
+      "http://localhost:3000",
+      "http://127.0.0.1:3000",
+      "https://blink-text.netlify.app",
+    ],
+    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization", "X-Password"],
+    credentials: true,
+    preflightContinue: false,
+    optionsSuccessStatus: 204,
   })
 );
-app.use(compression());
-app.use(express.json());
-app.use(morgan(process.env.NODE_ENV === "production" ? "combined" : "dev"));
 
-// Add cache control middleware for GET requests
-app.use((req, res, next) => {
-  if (req.method === "GET") {
-    res.setHeader("Cache-Control", "public, max-age=300");
-  } else {
-    res.setHeader(
-      "Cache-Control",
-      "no-store, no-cache, must-revalidate, proxy-revalidate"
-    );
-  }
-  next();
-});
-
-// Rate limiting
-const limiter = rateLimit({
-  windowMs: 15 * 60 * 1000,
-  max: 100,
-});
-app.use(limiter);
-
-// Health check route
-app.use("/api/health", healthRoutes);
-
-// Routes
-app.use("/api/auth", authRoutes);
-app.use("/api/texts", textRoutes);
-
-// Error handling
-app.use(errorHandler);
-
-// Connect to MongoDB
-const MONGODB_URI =
-  process.env.MONGODB_URI || "mongodb://localhost:27017/blinktext";
-mongoose
-  .connect(MONGODB_URI)
-  .then(() => {
-    console.log("Connected to MongoDB");
-    setupCleanupCronJob();
+// Handle OPTIONS requests explicitly
+app.options(
+  "*",
+  cors({
+    origin: [
+      "http://localhost:3000",
+      "http://127.0.0.1:3000",
+      "https://blink-text.netlify.app",
+    ],
+    credentials: true,
   })
-  .catch((err) => console.error("MongoDB connection error:", err));
+);
 
-// Function to set up cron job for cleaning expired texts
-const setupCleanupCronJob = () => {
-  cron.schedule("0 */6 * * *", async () => {
-    try {
-      console.log("Running scheduled cleanup of expired texts...");
-      const result = await Text.deleteMany({
-        expiresAt: { $lt: new Date() },
-      });
-      console.log(`Deleted ${result.deletedCount} expired texts`);
-    } catch (error) {
-      console.error("Error cleaning up expired texts:", error);
-    }
-  });
+// Setup other middleware
+setupMiddleware(app);
 
-  console.log("Scheduled cleanup job for expired texts (runs every 6 hours)");
+// Setup routes
+setupRoutes(app);
+
+// Connect to MongoDB and start server
+const startServer = async () => {
+  try {
+    // Connect to database
+    await connectDB();
+
+    // Setup cleanup job
+    setupCleanupCronJob();
+
+    // Start server
+    app.listen(config.port, () => {
+      console.log(`Server is running on port ${config.port}`);
+    });
+  } catch (error) {
+    console.error("Failed to start server:", error);
+    process.exit(1);
+  }
 };
 
-// Start server
-const PORT = process.env.PORT || 5001;
-app.listen(PORT, () => {
-  console.log(`Server is running on port ${PORT}`);
+startServer();
+
+// Handle unhandled promise rejections
+process.on("unhandledRejection", (err) => {
+  console.error("Unhandled Promise Rejection:", err);
+  // Close server and exit process
+  process.exit(1);
 });

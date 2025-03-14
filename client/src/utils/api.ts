@@ -45,6 +45,7 @@ export const textApi = {
   // Create a new text
   create: (data: {
     content: string;
+    encryptionKey: string;
     expirationMinutes: number;
     viewOnce: boolean;
     isProtected?: boolean;
@@ -70,8 +71,12 @@ export const textApi = {
   getHistory: () => api.get("/texts/history"),
 
   // Get user's texts with pagination
-  getUserTexts: (page = 1, limit = 50) =>
-    api.get(`/texts/history?page=${page}&limit=${limit}`),
+  getUserTexts: (page = 1, limit = 50, timestamp?: number) =>
+    api.get(
+      `/texts/history?page=${page}&limit=${limit}${
+        timestamp ? `&_t=${timestamp}` : ""
+      }`
+    ),
 
   // Delete a text (for authenticated users)
   deleteText: (id: string) => api.delete(`/texts/${id}`),

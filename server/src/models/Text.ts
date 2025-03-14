@@ -4,6 +4,7 @@ import bcrypt from "bcryptjs";
 export interface IText extends Document {
   _id: mongoose.Types.ObjectId;
   content: string;
+  encryptionKey: string;
   accessToken: string;
   userId?: mongoose.Types.ObjectId;
   isProtected: boolean;
@@ -22,6 +23,10 @@ const textSchema = new Schema({
     type: String,
     required: [true, "Content is required"],
     maxlength: [100000, "Content cannot exceed 100,000 characters"],
+  },
+  encryptionKey: {
+    type: String,
+    required: [true, "Encryption key is required"],
   },
   accessToken: {
     type: String,
