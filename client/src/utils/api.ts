@@ -3,7 +3,9 @@ import { toast } from "react-hot-toast";
 
 // Create an axios instance with base URL and default headers
 const api = axios.create({
-  baseURL: process.env.REACT_APP_API_URL || "http://localhost:5001/api",
+  baseURL:
+    process.env.REACT_APP_API_URL ||
+    "https://blink-text-production.up.railway.app/api",
   headers: {
     "Content-Type": "application/json",
   },
@@ -45,6 +47,7 @@ export const textApi = {
   // Create a new text
   create: (data: {
     content: string;
+    encryptionKey: string;
     expirationMinutes: number;
     viewOnce: boolean;
     isProtected?: boolean;
@@ -70,8 +73,12 @@ export const textApi = {
   getHistory: () => api.get("/texts/history"),
 
   // Get user's texts with pagination
-  getUserTexts: (page = 1, limit = 50) =>
-    api.get(`/texts/history?page=${page}&limit=${limit}`),
+  getUserTexts: (page = 1, limit = 50, timestamp?: number) =>
+    api.get(
+      `/texts/history?page=${page}&limit=${limit}${
+        timestamp ? `&_t=${timestamp}` : ""
+      }`
+    ),
 
   // Delete a text (for authenticated users)
   deleteText: (id: string) => api.delete(`/texts/${id}`),

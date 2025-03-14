@@ -16,8 +16,14 @@ export const createText = async (
   next: NextFunction
 ) => {
   try {
+    // Log request details for debugging
+    console.log("Create text request received:");
+    console.log("- User ID:", req.user?.id);
+    console.log("- Content length:", req.body.content?.length || 0);
+
     const {
       content,
+      encryptionKey,
       isProtected,
       password,
       maxViews,
@@ -28,6 +34,11 @@ export const createText = async (
 
     if (!content) {
       return next(new AppError("Content is required", 400));
+    }
+
+    // Validate encryption key
+    if (!encryptionKey) {
+      return next(new AppError("Encryption key is required", 400));
     }
 
     // Validate content length
@@ -74,11 +85,22 @@ export const createText = async (
     // Detect if content is potentially markdown
     const hasMarkdown = /[*#`>-]/.test(content);
 
+    // Ensure user ID is properly set if user is authenticated
+    const userId = req.user?.id || null;
+
+    // Log text creation details
+    console.log("Creating text with the following details:");
+    console.log("- User ID:", userId);
+    console.log("- Access Token:", accessToken);
+    console.log("- Is Protected:", isProtected);
+    console.log("- Has Markdown:", hasMarkdown);
+
     // Create text
     const text = await Text.create({
       content,
+      encryptionKey,
       accessToken,
-      userId: req.user?.id,
+      userId, // Use the extracted userId
       isProtected,
       password,
       maxViews,
@@ -89,6 +111,8 @@ export const createText = async (
 
     // Cast to IText to access properties
     const textDoc = text as unknown as IText;
+
+    console.log("Text created successfully with ID:", textDoc._id);
 
     const shareUrl = `${req.protocol}://${req.get("host")}/view/${
       textDoc.accessToken
@@ -105,6 +129,7 @@ export const createText = async (
       },
     });
   } catch (error) {
+    console.error("Error in createText:", error);
     next(error);
   }
 };
@@ -130,7 +155,7 @@ export const getText = async (
     // Select only the required fields for better performance
     const text = await query
       .select(
-        "content isProtected viewCount maxViews viewOnce expiresAt createdAt isMarkdown"
+        "content encryptionKey isProtected viewCount maxViews viewOnce expiresAt createdAt isMarkdown"
       )
       .lean();
 
@@ -208,6 +233,7 @@ export const getText = async (
       data: {
         id: text._id,
         content: text.content,
+        encryptionKey: text.encryptionKey,
         createdAt: text.createdAt,
         expiresAt: text.expiresAt,
         viewCount: updatedViewCount,
@@ -315,20 +341,64 @@ export const deleteText = async (
   res: Response,
   next: NextFunction
 ) => {
+  // Start a MongoDB session for transaction
+  const session = await mongoose.startSession();
+  session.startTransaction();
+
   try {
+    // Enhanced logging for debugging
+    console.log("Delete text request received:");
+    console.log("- Text ID:", req.params.id);
+    console.log("- User ID:", req.user?.id);
+    console.log("- Request headers:", JSON.stringify(req.headers, null, 2));
+
+    // Validate MongoDB ID format
+    if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+      console.error(`Invalid MongoDB ID format: ${req.params.id}`);
+      await session.abortTransaction();
+      session.endSession();
+      return next(new AppError("Invalid text ID format", 400));
+    }
+
+    // Find the text first to check if it exists and belongs to the user
     const text = await Text.findOne({
       _id: req.params.id,
       userId: req.user.id,
-    });
+    }).session(session);
 
     if (!text) {
+      console.log(
+        `Text not found - ID: ${req.params.id}, User ID: ${req.user.id}`
+      );
+      await session.abortTransaction();
+      session.endSession();
       return next(new AppError("Text not found", 404));
     }
 
-    // Cast to IText to access properties
-    const textDoc = text as unknown as IText;
+    // Log that we found the text
+    console.log(`Text found and will be deleted - ID: ${req.params.id}`);
 
-    await Text.deleteOne({ _id: textDoc._id });
+    // Use deleteOne within the transaction for consistent deletion
+    const deleteResult = await Text.deleteOne(
+      { _id: req.params.id },
+      { session }
+    );
+
+    if (deleteResult.deletedCount === 0) {
+      console.log(`Failed to delete text - ID: ${req.params.id}`);
+      await session.abortTransaction();
+      session.endSession();
+      return next(new AppError("Failed to delete text", 500));
+    }
+
+    // Commit the transaction
+    await session.commitTransaction();
+    session.endSession();
+
+    // Log the deletion success
+    console.log(
+      `Text ${req.params.id} successfully deleted by user ${req.user.id}`
+    );
 
     res.status(200).json({
       success: true,
@@ -336,6 +406,10 @@ export const deleteText = async (
       data: {},
     });
   } catch (error) {
+    // Abort transaction on error
+    await session.abortTransaction();
+    session.endSession();
+    console.error("Error in deleteText controller:", error);
     next(error);
   }
 };

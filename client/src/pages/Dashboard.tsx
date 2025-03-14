@@ -18,14 +18,6 @@ import {
 } from "react-icons/fi";
 import { useTheme } from "../utils/themeContext";
 import { textApi } from "../utils/api";
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-import { formatDistanceToNow } from "date-fns";
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-import { capitalizeFirst } from "../utils/stringUtils";
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-import TextCard from "../components/TextCard";
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-import EmptyState from "../components/EmptyState";
 
 interface Text {
   _id: string;
@@ -92,7 +84,9 @@ const Dashboard: React.FC = () => {
 
       try {
         setIsLoading(true);
-        const response = await textApi.getUserTexts(page);
+        // Add timestamp to bust browser and API caching
+        const timestamp = new Date().getTime();
+        const response = await textApi.getUserTexts(page, 50, timestamp);
 
         const newTexts = response.data.data;
         if (page === 1) {
@@ -197,7 +191,7 @@ const Dashboard: React.FC = () => {
     }
   }, [hasMore, isLoading, currentPage, fetchTexts]);
 
-  // Refresh text list
+  // Refresh text list with force refresh option
   const refreshTexts = useCallback(async () => {
     setIsRefreshing(true);
     await fetchTexts(1, true); // Refresh from page 1 with force refresh
@@ -209,18 +203,72 @@ const Dashboard: React.FC = () => {
   const handleDelete = async (id: string) => {
     try {
       if (deleteConfirm === id) {
-        await textApi.deleteText(id);
-        setTexts(texts.filter((text) => text._id !== id));
-        setDeleteConfirm(null);
-        toast.success("Text deleted successfully");
+        // Enhanced debugging
+        console.log("Attempting to delete text with ID:", id);
+
+        // Show loading toast while deleting
+        const loadingToast = toast.loading("Deleting text...");
+
+        try {
+          // Call the API to delete the text
+          console.log("Making API call to delete text:", id);
+          const response = await textApi.deleteText(id);
+          console.log("Delete API response:", response);
+
+          // If API call was successful, update the UI
+          if (response && response.data && response.data.success) {
+            // Remove the deleted text from state
+            setTexts(texts.filter((text) => text._id !== id));
+            setFilteredTexts(filteredTexts.filter((text) => text._id !== id));
+
+            // Clear the confirmation state
+            setDeleteConfirm(null);
+
+            // Force clear the cache
+            setLastRefreshed(null);
+
+            // Show success message
+            toast.dismiss(loadingToast);
+            toast.success("Text deleted successfully");
+
+            // Schedule a background refresh to ensure consistency
+            setTimeout(() => {
+              fetchTexts(1, true).catch((error) => {
+                console.error("Background refresh failed:", error);
+              });
+            }, 1000);
+          } else {
+            // If no success field in response, show error
+            console.error("Unexpected API response format:", response);
+            toast.dismiss(loadingToast);
+            toast.error("Failed to delete text. Please try again.");
+          }
+        } catch (apiError: any) {
+          console.error("API error during text deletion:", apiError);
+          toast.dismiss(loadingToast);
+          toast.error(
+            apiError.response?.data?.message ||
+              "Failed to delete text. Please try again."
+          );
+        }
       } else {
+        // First click - ask for confirmation
         setDeleteConfirm(id);
+        toast("Click again to confirm deletion");
+
         // Reset confirmation after 3 seconds
         setTimeout(() => setDeleteConfirm(null), 3000);
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error deleting text:", error);
-      toast.error("Failed to delete text");
+      // If it's a 404 error, show a more helpful message
+      if (error.response?.status === 404) {
+        toast.error(
+          "Could not find the text to delete. It may have already been deleted."
+        );
+      } else {
+        toast.error("Failed to delete text. Please try again.");
+      }
       setDeleteConfirm(null);
     }
   };

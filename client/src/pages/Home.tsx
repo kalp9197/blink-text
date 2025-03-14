@@ -16,6 +16,7 @@ import { textApi } from "../utils/api";
 import { useAuth } from "../utils/authContext";
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
+import { generateEncryptionKey, encryptText } from "../utils/encryption";
 
 const Home: React.FC = () => {
   const navigate = useNavigate();
@@ -53,13 +54,13 @@ const Home: React.FC = () => {
     }
 
     if (content.length > 100000) {
-      toast.error("Text exceeds maximum length of 100,000 characters");
+      toast.error("Text is too long, maximum of 100,000 characters allowed");
       setIsSubmitting(false);
       return;
     }
 
     if (isProtected && !password) {
-      toast.error("Please enter a password for your protected text");
+      toast.error("Password is required for protected texts");
       setIsSubmitting(false);
       return;
     }
@@ -71,7 +72,6 @@ const Home: React.FC = () => {
     }
 
     try {
-      // Convert expiryTime to expirationMinutes
       let expirationMinutes: number;
       switch (expiryTime) {
         case "5min":
@@ -90,8 +90,15 @@ const Home: React.FC = () => {
           expirationMinutes = 60; // Default to 1 hour
       }
 
+      // Generate an encryption key
+      const encryptionKey = generateEncryptionKey();
+
+      // Encrypt the content
+      const encryptedContent = encryptText(content, encryptionKey);
+
       const textData = {
-        content,
+        content: encryptedContent,
+        encryptionKey, // Include encryption key in the request
         expirationMinutes,
         maxViews: maxViews || undefined,
         viewOnce,
@@ -111,8 +118,14 @@ const Home: React.FC = () => {
 
       // Navigate to view page
       navigate(`/view/${accessToken}?new=true`);
-    } catch (err) {
+    } catch (err: any) {
       console.error("Error creating text:", err);
+      // Display a more helpful error message to the user
+      if (err.response?.data?.message) {
+        toast.error(err.response.data.message);
+      } else {
+        toast.error("An error occurred. Please try again later.");
+      }
     } finally {
       setIsSubmitting(false);
     }

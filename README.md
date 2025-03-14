@@ -51,14 +51,14 @@ A modern, secure, and user-friendly application for sharing sensitive text with 
 
 1. Clone the repository:
 
-```bash
+   ```bash
 git clone https://github.com/kalp9197/blink-text.git
 cd blink-text
-```
+   ```
 
 2. Install all dependencies (client and server):
 
-```bash
+   ```bash
 npm run install-all
 ```
 
@@ -70,15 +70,15 @@ This will install:
 
 3. Set up environment variables:
 
-```bash
+   ```bash
 # In the server directory, create a .env file:
 cp server/.env.example server/.env
 # Edit server/.env with your configuration
-```
+   ```
 
 4. Start the development servers:
 
-```bash
+   ```bash
 # Start both client and server
 npm start
 
