@@ -25,6 +25,15 @@ import { useTheme } from "../utils/themeContext";
 import { formatDistanceToNow } from "date-fns";
 import { decryptText } from "../utils/encryption";
 
+// Define our own CodeProps interface
+interface CodeProps {
+  node?: any;
+  inline?: boolean;
+  className?: string;
+  children?: React.ReactNode;
+  [key: string]: any;
+}
+
 // Lazy load heavy components for better performance
 const QRCode = lazy(() => import("react-qr-code"));
 const SyntaxHighlighter = lazy(() => import("react-syntax-highlighter"));
@@ -215,6 +224,12 @@ const View: React.FC = () => {
           textData.content,
           textData.encryptionKey
         );
+
+        // Log for debugging
+        console.log("Text data from server:", {
+          isMarkdown: textData.isMarkdown,
+          content: decryptedContent.substring(0, 100) + "...", // Show first 100 chars only
+        });
 
         // Update text state with all properties
         setText({
@@ -440,8 +455,36 @@ const View: React.FC = () => {
         {/* Content */}
         <div className="p-4">
           {text?.isMarkdown ? (
-            <div className="prose dark:prose-invert max-w-none prose-pre:bg-muted prose-pre:text-muted-foreground">
-              <ReactMarkdown remarkPlugins={[remarkGfm, remarkBreaks]}>
+            <div className="prose dark:prose-invert max-w-none prose-pre:bg-muted prose-pre:text-muted-foreground prose-code:bg-muted prose-code:px-1 prose-code:py-0.5 prose-code:rounded prose-code:text-sm prose-headings:text-foreground prose-a:text-primary">
+              <ReactMarkdown
+                remarkPlugins={[remarkGfm, remarkBreaks]}
+                components={{
+                  code: ({
+                    node,
+                    inline,
+                    className,
+                    children,
+                    ...props
+                  }: CodeProps) => {
+                    const match = /language-(\w+)/.exec(className || "");
+                    return !inline && match ? (
+                      <Suspense fallback={<LoadingFallback />}>
+                        <SyntaxHighlighter
+                          language={match[1]}
+                          style={syntaxHighlightTheme}
+                          PreTag="div"
+                        >
+                          {String(children).replace(/\n$/, "")}
+                        </SyntaxHighlighter>
+                      </Suspense>
+                    ) : (
+                      <code className={className} {...props}>
+                        {children}
+                      </code>
+                    );
+                  },
+                }}
+              >
                 {text?.content || ""}
               </ReactMarkdown>
             </div>
