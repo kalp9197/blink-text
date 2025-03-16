@@ -30,6 +30,7 @@ export const createText = async (
       viewOnce,
       expirationMinutes,
       customExpiryDate,
+      isMarkdown,
     } = req.body;
 
     if (!content) {
@@ -82,8 +83,8 @@ export const createText = async (
       expiresAt.setMinutes(expiresAt.getMinutes() + minutes);
     }
 
-    // Detect if content is potentially markdown
-    const hasMarkdown = /[*#`>-]/.test(content);
+    // Detect if content is potentially markdown (only as fallback)
+    const hasMarkdown = isMarkdown === true || /[*#`>-]/.test(content);
 
     // Ensure user ID is properly set if user is authenticated
     const userId = req.user?.id || null;
@@ -94,6 +95,7 @@ export const createText = async (
     console.log("- Access Token:", accessToken);
     console.log("- Is Protected:", isProtected);
     console.log("- Has Markdown:", hasMarkdown);
+    console.log("- isMarkdown flag from client:", isMarkdown);
 
     // Create text
     const text = await Text.create({

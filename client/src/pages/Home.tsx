@@ -104,7 +104,7 @@ const Home: React.FC = () => {
         viewOnce,
         isProtected: isProtected || undefined,
         password: isProtected ? password : undefined,
-        isMarkdown: useMarkdown || undefined,
+        isMarkdown: useMarkdown, // Always include isMarkdown flag, don't make it undefined
       };
 
       const response = await textApi.create(textData);
@@ -189,20 +189,70 @@ const Home: React.FC = () => {
                 <form onSubmit={handleSubmit}>
                   {/* Textarea Section */}
                   <div className="mb-6">
-                    <label
-                      htmlFor="content"
-                      className="block text-sm font-medium mb-2"
-                    >
-                      Text to share securely
-                    </label>
+                    <div className="flex items-center justify-between mb-2">
+                      <label
+                        htmlFor="content"
+                        className="block text-sm font-medium text-foreground"
+                      >
+                        Text Content
+                      </label>
+                      {useMarkdown && (
+                        <span className="text-xs bg-primary/10 text-primary px-2 py-1 rounded-full flex items-center gap-1">
+                          <FiCode className="inline" /> Markdown Enabled
+                        </span>
+                      )}
+                    </div>
                     <textarea
                       id="content"
+                      className={`w-full h-40 p-3 border border-input rounded-md bg-background text-foreground resize-y focus:outline-none focus:ring-2 focus:ring-primary/50 transition ${
+                        useMarkdown ? "font-mono text-sm" : ""
+                      }`}
+                      placeholder={
+                        useMarkdown
+                          ? "# Heading\n\nWrite your **markdown** content here.\n\n- List item 1\n- List item 2\n\n`code block`"
+                          : "Enter the text you want to share..."
+                      }
                       value={content}
                       onChange={(e) => setContent(e.target.value)}
-                      className="w-full h-40 px-3 py-2 bg-background text-foreground border border-input rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
-                      placeholder="Enter your message here..."
                       required
-                    ></textarea>
+                    />
+                    {useMarkdown && content && (
+                      <div className="mt-4 p-4 border border-border rounded-md bg-muted/30">
+                        <p className="text-xs text-muted-foreground mb-2">
+                          Preview:
+                        </p>
+                        <div className="prose dark:prose-invert max-w-none prose-sm prose-pre:bg-muted prose-pre:text-muted-foreground prose-code:bg-muted/70 prose-code:px-1 prose-code:py-0.5 prose-code:rounded prose-code:text-xs">
+                          {/* This is just a basic preview - the actual markdown rendering will be more sophisticated */}
+                          {content.split("\n").map((line, i) => {
+                            // Very basic markdown preview
+                            if (line.startsWith("# ")) {
+                              return (
+                                <h1 key={i} className="text-lg font-bold">
+                                  {line.substring(2)}
+                                </h1>
+                              );
+                            } else if (line.startsWith("## ")) {
+                              return (
+                                <h2 key={i} className="text-md font-bold">
+                                  {line.substring(3)}
+                                </h2>
+                              );
+                            } else if (line.startsWith("- ")) {
+                              return (
+                                <div key={i} className="flex">
+                                  <span className="mr-2">•</span>
+                                  {line.substring(2)}
+                                </div>
+                              );
+                            } else if (line.trim() === "") {
+                              return <br key={i} />;
+                            } else {
+                              return <p key={i}>{line}</p>;
+                            }
+                          })}
+                        </div>
+                      </div>
+                    )}
 
                     <div className="flex justify-between mt-2 text-xs text-muted-foreground">
                       <span>{content.length} / 100,000 characters</span>
